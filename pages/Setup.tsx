@@ -6,10 +6,10 @@ import PlayerSearch from '../components/PlayerSearch';
 import Loader from '../components/Loader';
 import { useUI } from '../contexts/UIContext';
 
-// FPL Draft API endpoints (trailing slashes removed)
-const PROXY_URL = 'https://corsproxy.io/?';
-const API_LEAGUE_DETAILS_URL = (id: string) => `${PROXY_URL}${encodeURIComponent(`https://draft.premierleague.com/api/league/${id}/details`)}`;
-const API_ELEMENT_STATUS_URL = (id: string) => `${PROXY_URL}${encodeURIComponent(`https://draft.premierleague.com/api/league/${id}/element-status`)}`;
+// Use our backend API proxy
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_LEAGUE_DETAILS_URL = (id: string) => `${API_BASE_URL}/api/league/${id}/details`;
+const API_ELEMENT_STATUS_URL = (id: string) => `${API_BASE_URL}/api/league/${id}/element-status`;
 
 const STARTING_BUDGET = 100;
 

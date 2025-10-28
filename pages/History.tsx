@@ -4,9 +4,9 @@ import { useFPLData } from '../contexts/FPLDataContext';
 import Loader from '../components/Loader';
 
 
-// Switched to a more reliable proxy to fix fetch errors
-const PROXY_URL = 'https://corsproxy.io/?';
-const API_PLAYER_SUMMARY_URL = (id: number) => `${PROXY_URL}${encodeURIComponent(`https://fantasy.premierleague.com/api/element-summary/${id}/`)}`;
+// Use our backend API proxy
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_PLAYER_SUMMARY_URL = (id: number) => `${API_BASE_URL}/api/element-summary/${id}`;
 
 const SortIndicator = ({ sortConfig, columnKey }: { sortConfig: {key:string, direction:string} | null, columnKey: string }) => {
     if (!sortConfig || sortConfig.key !== columnKey) {

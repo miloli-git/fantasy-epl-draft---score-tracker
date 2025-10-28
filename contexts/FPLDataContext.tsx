@@ -27,9 +27,9 @@ const FPLDataContext = createContext<FPLDataContextType>({
 
 export const useFPLData = () => useContext(FPLDataContext);
 
-// Switched to a more reliable proxy to fix fetch errors
-const PROXY_URL = 'https://corsproxy.io/?';
-const API_URL = `${PROXY_URL}${encodeURIComponent('https://fantasy.premierleague.com/api/bootstrap-static/')}`;
+// Use our backend API proxy (supports both local development and production)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = `${API_BASE_URL}/api/bootstrap-static`;
 const FPL_BOOTSTRAP_CACHE_KEY = 'fplBootstrapCache';
 const CACHE_DURATION = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
 
