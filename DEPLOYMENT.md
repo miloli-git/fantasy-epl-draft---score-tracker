@@ -1,99 +1,74 @@
-# Deployment Guide
+# Deployment Guide - Vercel (Simplified)
 
-This guide explains how to deploy the Fantasy EPL Draft Score Tracker.
+This guide explains how to deploy the entire Fantasy EPL Draft Score Tracker to Vercel in one simple deployment.
 
-## Architecture
+## Why Vercel?
 
-The app consists of two parts:
-1. **Frontend** - React app (deployed to GitHub Pages)
-2. **Backend API** - Node.js proxy server (deployed to Vercel)
+Since we already need Vercel for the backend API, we can deploy the entire app (frontend + backend) to Vercel:
 
-## Step 1: Deploy the Backend API to Vercel
+✅ **One platform** - No need for GitHub Pages
+✅ **Simpler setup** - Single deployment command
+✅ **Better performance** - Frontend and backend on same domain (no CORS preflight)
+✅ **Easier management** - One dashboard, one URL
+✅ **Still FREE** - Vercel's free tier is generous
 
-The backend API is required to proxy requests to the FPL API (avoiding CORS issues).
+## Prerequisites
 
-### Prerequisites
-- Vercel account (free tier works fine)
-- Vercel CLI installed: `npm install -g vercel`
+- Vercel account (sign up at vercel.com - it's free)
+- Vercel CLI: `npm install -g vercel`
 
-### Deployment Steps
+## One-Step Deployment
 
-1. Navigate to the API directory:
+### 1. Install Vercel CLI (if not already installed)
+
 ```bash
-cd api
+npm install -g vercel
 ```
 
-2. Install dependencies:
-```bash
-npm install
-```
+### 2. Deploy Everything
 
-3. Deploy to Vercel:
+From the project root directory:
+
 ```bash
 vercel
 ```
 
-4. Follow the prompts:
-   - Select your Vercel account
-   - Link to existing project or create new one
-   - Accept default settings
+Follow the prompts:
+- **Set up and deploy?** → Yes
+- **Which scope?** → Select your account
+- **Link to existing project?** → No (or Yes if you've deployed before)
+- **What's your project's name?** → fantasy-epl-draft (or keep default)
+- **In which directory is your code located?** → ./ (press Enter)
+- **Want to override settings?** → No
 
-5. After deployment, you'll receive a URL like: `https://your-api-name.vercel.app`
+That's it! Vercel will:
+1. Build your frontend (React app)
+2. Deploy your backend (API server)
+3. Configure routing automatically
+4. Give you a live URL like: `https://fantasy-epl-draft.vercel.app`
 
-6. **Save this URL** - you'll need it for the frontend configuration!
+### 3. Production Deployment
 
-### Test the API
+For subsequent deployments to production:
 
-Visit `https://your-api-name.vercel.app/health` to verify it's working.
-
-## Step 2: Configure the Frontend
-
-1. Create a `.env.local` file in the root directory:
 ```bash
-VITE_API_URL=https://your-api-name.vercel.app
+vercel --prod
 ```
 
-Replace `https://your-api-name.vercel.app` with your actual Vercel deployment URL from Step 1.
+## How It Works
 
-## Step 3: Deploy the Frontend to GitHub Pages
+The `vercel.json` configuration tells Vercel:
 
-1. Install dependencies (if not already done):
-```bash
-npm install
-```
-
-2. Build and deploy:
-```bash
-npm run deploy
-```
-
-This will:
-- Build the production app
-- Create a `gh-pages` branch
-- Push the built files to GitHub Pages
-
-3. Enable GitHub Pages in your repository:
-   - Go to Settings > Pages
-   - Source: Deploy from a branch
-   - Branch: `gh-pages` / `root`
-   - Save
-
-4. Your app will be live at:
-```
-https://miloli-git.github.io/fantasy-epl-draft---score-tracker/
-```
-
-## Environment Variables
-
-### Frontend (.env.local)
-- `VITE_API_URL` - Your Vercel API URL (required for production)
-
-### Backend (optional)
-- `PORT` - Server port (default: 3001)
+1. **Frontend**: Build the React app from `package.json` → creates static files in `dist/`
+2. **Backend**: Deploy `api/index.js` as a serverless function
+3. **Routing**:
+   - `/api/*` → Backend API
+   - Everything else → Frontend static files
+4. **Environment**: Automatically sets `VITE_API_URL=/api` so frontend uses relative paths
 
 ## Local Development
 
-### Run the Backend
+### Terminal 1 - Backend API
 ```bash
 cd api
 npm install
@@ -102,7 +77,7 @@ npm start
 
 Backend runs on: `http://localhost:3001`
 
-### Run the Frontend
+### Terminal 2 - Frontend
 ```bash
 npm install
 npm run dev
@@ -110,47 +85,94 @@ npm run dev
 
 Frontend runs on: `http://localhost:3000`
 
-Make sure your `.env.local` points to `http://localhost:3001` for local development.
+The `.env.local` file tells the frontend to use `http://localhost:3001` during development.
 
-## Updating the Deployment
+## Environment Variables
 
-### Update Backend
+### Production (Vercel)
+Automatically configured via `vercel.json`:
+- `VITE_API_URL=/api` (uses relative paths)
+
+### Local Development
+Configured in `.env.local`:
+- `VITE_API_URL=http://localhost:3001`
+
+## Project Structure
+
+```
+.
+├── api/              # Backend API (serverless function)
+│   ├── index.js      # API server
+│   └── package.json  # API dependencies
+├── src/              # Frontend source code
+├── dist/             # Built frontend (auto-generated)
+├── vercel.json       # Vercel configuration
+└── package.json      # Frontend dependencies
+```
+
+## Updating Your Deployment
+
+Just run:
 ```bash
-cd api
 vercel --prod
 ```
 
-### Update Frontend
-```bash
-npm run deploy
-```
+Vercel will rebuild and redeploy everything automatically.
 
-## Troubleshooting
+## Custom Domain (Optional)
 
-### Frontend can't connect to backend
-- Verify your `VITE_API_URL` in `.env.local` is correct
-- Test the backend health endpoint: `https://your-api.vercel.app/health`
-- Check browser console for CORS errors
+1. Go to your Vercel dashboard
+2. Select your project
+3. Settings → Domains
+4. Add your custom domain
+5. Follow DNS setup instructions
 
-### GitHub Pages shows 404
-- Verify GitHub Pages is enabled for the `gh-pages` branch
-- Check that `base` in `vite.config.ts` matches your repo name
-- Wait a few minutes for GitHub Pages to update
+## Vercel Dashboard
 
-### Build fails
-- Run `npm install` to ensure all dependencies are installed
-- Check for TypeScript errors: `npm run build`
-- Verify all imports are correct
+View your deployment at: https://vercel.com/dashboard
+
+Here you can:
+- See deployment logs
+- View analytics
+- Manage domains
+- Configure environment variables
+- Roll back to previous deployments
 
 ## Cost
 
-Both services are **FREE**:
-- Vercel: Free tier includes 100GB bandwidth, serverless functions
-- GitHub Pages: Free for public repositories
+**Completely FREE** with Vercel's Hobby plan:
+- Unlimited bandwidth
+- Automatic HTTPS
+- CDN included
+- 100GB monthly bandwidth
+- Serverless functions included
+
+## Troubleshooting
+
+### Build fails
+```bash
+# Test build locally first
+npm run build
+```
+
+### API not working
+Check logs in Vercel dashboard → Your Project → Deployments → Latest → Logs
+
+### Frontend shows errors
+- Check browser console
+- Verify API endpoints are working: `https://your-app.vercel.app/api/health`
+
+### Need to clear cache
+Redeploy with:
+```bash
+vercel --prod --force
+```
+
+## Preview Deployments
+
+Every git branch you push gets its own preview URL automatically! Perfect for testing before production.
 
 ## Support
 
-For issues:
-1. Check browser console for errors
-2. Verify API is responding: `/health` endpoint
-3. Check GitHub Actions for deployment logs
+- Vercel Docs: https://vercel.com/docs
+- Vercel Support: https://vercel.com/support

@@ -45,20 +45,31 @@ npm run dev
 
 Frontend runs on: `http://localhost:3000`
 
-## Deployment
+## Deployment to Vercel (One Command!)
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions to:
-- Backend API → Vercel (free)
-- Frontend → GitHub Pages (free)
+Deploy the entire app (frontend + backend) to Vercel in one step:
+
+```bash
+npm install -g vercel
+vercel
+```
+
+That's it! See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
+
+**Why Vercel?**
+- ✅ One platform for everything
+- ✅ Simpler than separate deployments
+- ✅ Better performance (no CORS preflight)
+- ✅ Completely FREE
 
 ## Configuration
 
-Create a `.env.local` file:
+The `.env.local` file is only needed for local development:
 ```
-VITE_API_URL=http://localhost:3001  # For local dev
-# or
-VITE_API_URL=https://your-api.vercel.app  # For production
+VITE_API_URL=http://localhost:3001
 ```
+
+When deployed to Vercel, the API URL is automatically configured via `vercel.json`.
 
 ## Project Structure
 
