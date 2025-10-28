@@ -29,6 +29,11 @@ const Setup: React.FC = () => {
     const [isPriceImporting, setIsPriceImporting] = useState(false);
     const [priceImportLog, setPriceImportLog] = useState<string[]>([]);
 
+    // State for Custom Draft Format import
+    const [customDraftData, setCustomDraftData] = useState('');
+    const [isCustomImporting, setIsCustomImporting] = useState(false);
+    const [customImportLog, setCustomImportLog] = useState<string[]>([]);
+
     const handleAddManager = (e: React.FormEvent) => {
         e.preventDefault();
         if (newManagerName.trim()) {
@@ -158,6 +163,128 @@ const Setup: React.FC = () => {
         setIsPriceImporting(false);
     };
 
+    const handleCustomDraftImport = () => {
+        setIsCustomImporting(true);
+        setCustomImportLog(['🚀 Starting custom draft format import...']);
+
+        const addToCustomLog = (message: string) => setCustomImportLog(prev => [...prev, message]);
+
+        try {
+            const lines = customDraftData.split('\n').filter(line => line.trim() !== '');
+
+            if (lines.length < 3) {
+                addToCustomLog('❌ Error: Not enough data. Need at least manager names and one player row.');
+                setIsCustomImporting(false);
+                return;
+            }
+
+            // Parse manager names from first row
+            const managerNames = lines[0].split('\t').map(name => name.trim()).filter(name => name !== '');
+            addToCustomLog(`Found ${managerNames.length} managers: ${managerNames.join(', ')}`);
+
+            // Initialize manager data structures
+            const newManagers: Manager[] = managerNames.map((name, idx) => ({
+                id: `custom-${Date.now()}-${idx}`,
+                name: name,
+                cash: STARTING_BUDGET,
+                roster: []
+            }));
+
+            const newPrices: { [playerId: number]: number } = {};
+            let successCount = 0;
+            let errorCount = 0;
+
+            // Process player rows in pairs (player names, then prices)
+            for (let i = 1; i < lines.length; i += 2) {
+                if (i + 1 >= lines.length) {
+                    // Last row might be totals, skip if no matching price row
+                    break;
+                }
+
+                const playerRow = lines[i].split('\t').map(s => s.trim());
+                const priceRow = lines[i + 1].split('\t').map(s => s.trim());
+
+                // Process each column (manager)
+                for (let col = 0; col < managerNames.length && col < playerRow.length && col < priceRow.length; col++) {
+                    const playerText = playerRow[col];
+                    const priceText = priceRow[col];
+
+                    if (!playerText || !priceText) continue;
+
+                    // Remove position prefix (GK, DEF, MID, FWD, etc.)
+                    const cleanPlayerName = playerText.replace(/^(GK|DEF|MID|FWD|Def)/i, '').trim();
+
+                    if (!cleanPlayerName) continue;
+
+                    // Parse price (remove $ if present)
+                    const price = parseFloat(priceText.replace('$', ''));
+
+                    if (isNaN(price)) {
+                        addToCustomLog(`⚠️ Row ${i + 1}, Col ${col + 1}: Invalid price "${priceText}" for ${cleanPlayerName}`);
+                        errorCount++;
+                        continue;
+                    }
+
+                    // Find matching player in FPL database
+                    const normalizedName = cleanPlayerName.toLowerCase();
+                    const player = allPlayers.find(p => {
+                        const webName = p.web_name.toLowerCase();
+                        const fullName = `${p.first_name} ${p.second_name}`.toLowerCase();
+                        const lastName = p.second_name.toLowerCase();
+
+                        return webName === normalizedName ||
+                               fullName === normalizedName ||
+                               lastName === normalizedName ||
+                               webName.includes(normalizedName) ||
+                               normalizedName.includes(webName);
+                    });
+
+                    if (!player) {
+                        addToCustomLog(`❌ Row ${i + 1}, Col ${col + 1}: Player "${cleanPlayerName}" not found in FPL database`);
+                        errorCount++;
+                        continue;
+                    }
+
+                    // Check if player is already rostered
+                    if (newManagers.some(m => m.roster.includes(player.id))) {
+                        addToCustomLog(`⚠️ Row ${i + 1}, Col ${col + 1}: ${player.web_name} already assigned to another manager, skipping duplicate`);
+                        errorCount++;
+                        continue;
+                    }
+
+                    // Add player to manager's roster
+                    newManagers[col].roster.push(player.id);
+                    newPrices[player.id] = price;
+                    successCount++;
+
+                    if (successCount <= 10 || successCount % 20 === 0) {
+                        addToCustomLog(`✅ Matched ${player.web_name} to ${managerNames[col]} for $${price}`);
+                    }
+                }
+            }
+
+            // Calculate remaining cash for each manager
+            newManagers.forEach(manager => {
+                const totalSpent = manager.roster.reduce((acc, playerId) => acc + (newPrices[playerId] || 0), 0);
+                manager.cash = STARTING_BUDGET - totalSpent;
+            });
+
+            // Update state
+            setManagers(newManagers);
+            setAuctionPrices(newPrices);
+
+            addToCustomLog(`✅ Import complete! Successfully imported ${successCount} players, ${errorCount} errors`);
+            addToCustomLog(`✅ Created ${newManagers.length} managers with rosters and auction prices`);
+
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            setCustomImportLog(prev => [...prev, `❌ Error: ${errorMessage}`]);
+            console.error(error);
+        } finally {
+            setIsCustomImporting(false);
+        }
+    };
+
 
     const allRosteredPlayerIds = managers.flatMap(m => m.roster);
 
@@ -197,7 +324,43 @@ const Setup: React.FC = () => {
                     </div>
                 )}
             </div>
-            
+
+            {/* Step 1.5: Custom Draft Format Import */}
+            <div className="max-w-4xl mx-auto bg-pl-purple-light p-6 rounded-lg shadow-2xl space-y-4">
+                <h3 className="text-xl font-bold text-white">Step 1 (Alternative): Import Custom Draft Format</h3>
+                <p className="text-gray-400 text-sm">
+                    Paste your draft data in tab-separated format. First row should contain manager names,
+                    then alternating rows of player names (with position prefix) and their auction prices.
+                </p>
+                <p className="text-gray-400 text-xs font-mono">
+                    Format: Tab-separated columns where each column is a manager's team.<br/>
+                    Row 1: Manager names<br/>
+                    Row 2+: Player name (with GK/DEF/MID/FWD prefix)<br/>
+                    Row 3+: Price for that player
+                </p>
+                <textarea
+                    value={customDraftData}
+                    onChange={(e) => setCustomDraftData(e.target.value)}
+                    placeholder={'Mayoori	Lakshman	Dom\nGKRaya	GKPope	GKDonnarumma\n$110	60	$190\nDEFGabriel	DEFBallard	DEFCalafiori\n$90	5	$130'}
+                    className="w-full h-48 bg-pl-purple border border-gray-600 rounded-md py-2 px-4 focus:ring-2 focus:ring-pl-green focus:outline-none font-mono text-xs"
+                    disabled={isCustomImporting || fplLoading}
+                />
+                <button
+                    onClick={handleCustomDraftImport}
+                    disabled={isCustomImporting || !customDraftData || fplLoading}
+                    className="bg-pl-pink text-white font-bold py-2 px-6 rounded-md hover:bg-opacity-80 transition-all duration-200 disabled:bg-gray-500 disabled:cursor-not-allowed"
+                >
+                    {isCustomImporting ? 'Importing...' : 'Import Custom Draft Data'}
+                </button>
+                {customImportLog.length > 0 && (
+                    <div className="bg-pl-purple p-4 rounded-md mt-4 max-h-64 overflow-y-auto">
+                        <ul className="text-xs text-gray-400 font-mono space-y-1">
+                            {customImportLog.map((msg, i) => <li key={i}>{msg}</li>)}
+                        </ul>
+                    </div>
+                )}
+            </div>
+
             {/* Step 2: Price Import */}
             {managers.length > 0 && (
                 <div className="max-w-4xl mx-auto bg-pl-purple-light p-6 rounded-lg shadow-2xl space-y-4">

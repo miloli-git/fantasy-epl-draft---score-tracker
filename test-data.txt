@@ -1,0 +1,32 @@
+Mayoori	Lakshman	Dom	Sara	Robbie	Milo	Darryl
+GKRaya	GKPope	GKDonnarumma	GKPickford	GKHenderson	GKVicario	GKSánchez
+$110	60	$190	$80	30	95	40
+GKA.Becker	GKPerri	GKRoefs	GKKelleher	GKMartinez	GKDúbravka	GKSels
+$100	1	5	5	1	5	5
+DEFGabriel	DefBallard	DEFCalafiori	DEFCucurella	DEFSaliba	DEFJ.Timber	DEFTarkowski
+$90	5	$130	$130	$100	$80	$50
+DEFJames	DefRichards	DEFMuñoz	DEFKonaté	DEFPedro Porro	DefLacroix	DEFFrimpong
+$20	5	$80	$50	$90	115	$60
+DEFKerkez	DefRodon	DEFAït-Nouri	DEFGuéhi	DEFChalobah	DefGudmundsson	DEFSchär
+$10	5	$110	95	120	5	$50
+DEFVirgil	DEFDiouf	DEFSenesi	DEFDiakité	DEFLivramento	DEFMitchell	DEFMilenković
+$170	10	50	10	85	45	$10
+DEFGvardiol	DEFVan de Ven	DEFBurn	DEFMings	DEFStones	DEFVan den Berg	DEFRomero
+$120	5	25	1	1	5	65
+MIDFoden	MIDPalmer	MIDTavernier	MIDSaka	MIDRogers	MIDM.Salah	MIDJohnson
+$50	$800	$10	$700	$125	$1,000	$25
+MIDAnthony	MIDElanga	MIDMitoma	MIDSemenyo	MIDEze	MIDSchade	MIDØdegaard
+$100	$50	$50	$200	$125	$25	$200
+MIDGeorginio	MIDB.Fernandes	MIDEnzo	MIDWirtz	MIDMbeumo	MIDCunha	MIDGordon
+$20	$525	$70	$375	$400	$225	$150
+MIDSzoboszlai	MIDMartinelli	MIDCaicedo	MIDRice	MIDO.Dango	MIDSarr	MIDGakpo
+$70	$30	$10	$30	$120	$10	$175
+MIDKudus	MIDReijnders	MIDGrealish	MIDRodrigo	MIDNdiaye	MIDL.Paquetá	MIDGibbs-White
+$80	$10	$110	$10	$90	$10	$1
+FWDIsak	FWDJoão Pedro	FWDHaaland	FWDSolanke	FWDKolo Muani	FWDEkitiké	FWDWatkins
+$800	$450	$950	$175	$75	$150	$275
+FWDBowen	FWDWelbeck	FWDEvanilson	FWDIsidor	FWDMateta	FWDŠeško	FWDWissa
+$225	$10	$25	$60	$200	$75	$251
+FWDFoster	FWDRicharlison	FWDThiago	FWDWilson	FWDGyökeres	FWDHavertz	FWDWood
+$1	$30	$90	$10	$425	$100	$399
+34	4	95	69	13	55	244
