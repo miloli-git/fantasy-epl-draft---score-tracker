@@ -14,12 +14,12 @@ const API_ELEMENT_STATUS_URL = (id: string) => `${PROXY_URL}${encodeURIComponent
 const STARTING_BUDGET = 2000;
 
 const Setup: React.FC = () => {
-    const { managers, addManager, updateManager, deleteManager, setManagers, setAuctionPrices } = useLeague();
+    const { managers, addManager, updateManager, deleteManager, setManagers, setAuctionPrices, setLeagueId } = useLeague();
     const { loading: fplLoading, players: allPlayers } = useFPLData();
     const [newManagerName, setNewManagerName] = useState('');
-    
+
     // State for FPL Draft API import
-    const [leagueId, setLeagueId] = useState('');
+    const [leagueIdInput, setLeagueIdInput] = useState('');
     const [isImporting, setIsImporting] = useState(false);
     const [importLog, setImportLog] = useState<string[]>([]);
     const [confirmingImport, setConfirmingImport] = useState(false);
@@ -45,7 +45,7 @@ const Setup: React.FC = () => {
     const addToLog = (message: string) => setImportLog(prev => [...prev, message]);
 
     const handleDraftImport = async () => {
-        if (!leagueId.trim()) {
+        if (!leagueIdInput.trim()) {
             alert('Please enter a League ID.');
             return;
         }
@@ -54,10 +54,10 @@ const Setup: React.FC = () => {
         setIsImporting(true);
         setImportLog([]);
         addToLog("🚀 Starting FPL Draft league import...");
-        
+
         try {
-            addToLog(`Fetching league details for ID: ${leagueId}...`);
-            const detailsRes = await fetch(API_LEAGUE_DETAILS_URL(leagueId));
+            addToLog(`Fetching league details for ID: ${leagueIdInput}...`);
+            const detailsRes = await fetch(API_LEAGUE_DETAILS_URL(leagueIdInput));
             if (!detailsRes.ok) throw new Error(`Failed to fetch league details (Status: ${detailsRes.status})`);
             const detailsData = await detailsRes.json();
             
@@ -73,7 +73,7 @@ const Setup: React.FC = () => {
             });
             
             addToLog("Fetching player ownership data...");
-            const statusRes = await fetch(API_ELEMENT_STATUS_URL(leagueId));
+            const statusRes = await fetch(API_ELEMENT_STATUS_URL(leagueIdInput));
             if (!statusRes.ok) throw new Error(`Failed to fetch player ownership (Status: ${statusRes.status})`);
             const statusData = await statusRes.json();
             
@@ -163,13 +163,56 @@ const Setup: React.FC = () => {
         setIsPriceImporting(false);
     };
 
-    const handleCustomDraftImport = () => {
+    const handleCustomDraftImport = async () => {
         setIsCustomImporting(true);
         setCustomImportLog(['🚀 Starting custom draft format import...']);
 
         const addToCustomLog = (message: string) => setCustomImportLog(prev => [...prev, message]);
 
         try {
+            // Fetch league 144138 data
+            const LEAGUE_ID = '144138';
+            addToCustomLog(`Fetching league ${LEAGUE_ID} data...`);
+
+            const detailsRes = await fetch(API_LEAGUE_DETAILS_URL(LEAGUE_ID));
+            if (!detailsRes.ok) throw new Error(`Failed to fetch league details (Status: ${detailsRes.status})`);
+            const detailsData = await detailsRes.json();
+
+            const leagueEntries = detailsData.league_entries;
+            if (!leagueEntries || leagueEntries.length === 0) {
+                throw new Error("No managers found in league 144138.");
+            }
+
+            addToCustomLog(`✅ Found ${leagueEntries.length} managers in league "${detailsData.league.name}"`);
+
+            // Fetch player ownership
+            addToCustomLog("Fetching player ownership data...");
+            const statusRes = await fetch(API_ELEMENT_STATUS_URL(LEAGUE_ID));
+            if (!statusRes.ok) throw new Error(`Failed to fetch player ownership (Status: ${statusRes.status})`);
+            const statusData = await statusRes.json();
+
+            const elementStatus = statusData.element_status;
+            const leagueRosters = new Map<number, number[]>(); // entryId -> playerIds
+            elementStatus.forEach((player: any) => {
+                if (player.owner !== null) {
+                    if (!leagueRosters.has(player.owner)) leagueRosters.set(player.owner, []);
+                    leagueRosters.get(player.owner)!.push(player.element);
+                }
+            });
+
+            // Create map of entry names to entry data
+            const entryMap = new Map<string, { entryId: number; roster: number[] }>();
+            leagueEntries.forEach((entry: any) => {
+                const firstName = entry.player_first_name.trim();
+                entryMap.set(firstName, {
+                    entryId: entry.entry_id,
+                    roster: leagueRosters.get(entry.entry_id) || []
+                });
+            });
+
+            addToCustomLog(`✅ League data loaded successfully`);
+
+            // Parse custom draft data
             const lines = customDraftData.split('\n').filter(line => line.trim() !== '');
 
             if (lines.length < 3) {
@@ -180,15 +223,31 @@ const Setup: React.FC = () => {
 
             // Parse manager names from first row
             const managerNames = lines[0].split('\t').map(name => name.trim()).filter(name => name !== '');
-            addToCustomLog(`Found ${managerNames.length} managers: ${managerNames.join(', ')}`);
+            addToCustomLog(`Found ${managerNames.length} managers in import: ${managerNames.join(', ')}`);
 
-            // Initialize manager data structures
-            const newManagers: Manager[] = managerNames.map((name, idx) => ({
-                id: `custom-${Date.now()}-${idx}`,
-                name: name,
-                cash: STARTING_BUDGET,
-                roster: []
-            }));
+            // Match manager names to league entries
+            const newManagers: Manager[] = [];
+            for (const name of managerNames) {
+                const entryData = entryMap.get(name);
+                if (!entryData) {
+                    addToCustomLog(`⚠️ Warning: Manager "${name}" not found in league 144138`);
+                    newManagers.push({
+                        id: `custom-${Date.now()}-${newManagers.length}`,
+                        name: name,
+                        cash: STARTING_BUDGET,
+                        roster: []
+                    });
+                } else {
+                    addToCustomLog(`✅ Matched manager "${name}" to entry ID ${entryData.entryId}`);
+                    newManagers.push({
+                        id: entryData.entryId.toString(),
+                        name: name,
+                        cash: STARTING_BUDGET,
+                        roster: entryData.roster,
+                        entryId: entryData.entryId
+                    });
+                }
+            }
 
             const newPrices: { [playerId: number]: number } = {};
             let successCount = 0;
@@ -216,8 +275,8 @@ const Setup: React.FC = () => {
 
                     if (!cleanPlayerName) continue;
 
-                    // Parse price (remove $ if present)
-                    const price = parseFloat(priceText.replace('$', ''));
+                    // Parse price (remove $ and commas)
+                    const price = parseFloat(priceText.replace(/[$,]/g, ''));
 
                     if (isNaN(price)) {
                         addToCustomLog(`⚠️ Row ${i + 1}, Col ${col + 1}: Invalid price "${priceText}" for ${cleanPlayerName}`);
@@ -225,9 +284,16 @@ const Setup: React.FC = () => {
                         continue;
                     }
 
-                    // Find matching player in FPL database
+                    // Find matching player in manager's roster
+                    const manager = newManagers[col];
+                    if (!manager || !manager.roster || manager.roster.length === 0) {
+                        continue;
+                    }
+
                     const normalizedName = cleanPlayerName.toLowerCase();
                     const player = allPlayers.find(p => {
+                        if (!manager.roster.includes(p.id)) return false;
+
                         const webName = p.web_name.toLowerCase();
                         const fullName = `${p.first_name} ${p.second_name}`.toLowerCase();
                         const lastName = p.second_name.toLowerCase();
@@ -239,26 +305,16 @@ const Setup: React.FC = () => {
                                normalizedName.includes(webName);
                     });
 
-                    if (!player) {
-                        addToCustomLog(`❌ Row ${i + 1}, Col ${col + 1}: Player "${cleanPlayerName}" not found in FPL database`);
+                    if (player) {
+                        newPrices[player.id] = price;
+                        successCount++;
+
+                        if (successCount <= 10 || successCount % 20 === 0) {
+                            addToCustomLog(`✅ Set price for ${player.web_name} (${managerNames[col]}): $${price}`);
+                        }
+                    } else {
+                        addToCustomLog(`⚠️ Row ${i + 1}, Col ${col + 1}: Player "${cleanPlayerName}" not found in ${managerNames[col]}'s roster`);
                         errorCount++;
-                        continue;
-                    }
-
-                    // Check if player is already rostered
-                    if (newManagers.some(m => m.roster.includes(player.id))) {
-                        addToCustomLog(`⚠️ Row ${i + 1}, Col ${col + 1}: ${player.web_name} already assigned to another manager, skipping duplicate`);
-                        errorCount++;
-                        continue;
-                    }
-
-                    // Add player to manager's roster
-                    newManagers[col].roster.push(player.id);
-                    newPrices[player.id] = price;
-                    successCount++;
-
-                    if (successCount <= 10 || successCount % 20 === 0) {
-                        addToCustomLog(`✅ Matched ${player.web_name} to ${managerNames[col]} for $${price}`);
                     }
                 }
             }
@@ -272,9 +328,11 @@ const Setup: React.FC = () => {
             // Update state
             setManagers(newManagers);
             setAuctionPrices(newPrices);
+            setLeagueId(LEAGUE_ID);
 
-            addToCustomLog(`✅ Import complete! Successfully imported ${successCount} players, ${errorCount} errors`);
-            addToCustomLog(`✅ Created ${newManagers.length} managers with rosters and auction prices`);
+            addToCustomLog(`✅ Import complete! Successfully set prices for ${successCount} players, ${errorCount} errors`);
+            addToCustomLog(`✅ Created ${newManagers.length} managers with league rosters and auction prices`);
+            addToCustomLog(`ℹ️ Scoring will now account for bench players using league lineup data`);
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -303,7 +361,7 @@ const Setup: React.FC = () => {
                     Find your ID in your league URL (e.g., .../leagues/ID/standings/c).
                 </p>
                 <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0">
-                    <input type="text" value={leagueId} onChange={(e) => setLeagueId(e.target.value)} placeholder="e.g., 33917" className="flex-grow bg-pl-purple border border-gray-600 rounded-md py-2 px-4 focus:ring-2 focus:ring-pl-green focus:outline-none" disabled={isImporting || confirmingImport} />
+                    <input type="text" value={leagueIdInput} onChange={(e) => setLeagueIdInput(e.target.value)} placeholder="e.g., 33917" className="flex-grow bg-pl-purple border border-gray-600 rounded-md py-2 px-4 focus:ring-2 focus:ring-pl-green focus:outline-none" disabled={isImporting || confirmingImport} />
                      {!confirmingImport ? (
                         <button onClick={() => setConfirmingImport(true)} disabled={isImporting || fplLoading} className="bg-pl-pink text-white font-bold py-2 px-6 rounded-md hover:bg-opacity-80 transition-all duration-200 disabled:bg-gray-500 disabled:cursor-not-allowed w-full sm:w-auto">
                             {isImporting ? 'Importing...' : 'Import League'}

@@ -52,6 +52,16 @@ export interface Manager {
     name: string;
     cash: number;
     roster: number[]; // Array of player IDs
+    entryId?: number; // FPL Draft entry ID for fetching lineups
+}
+
+export interface GameweekLineup {
+    [managerId: string]: {
+        [gameweek: number]: {
+            starters: number[]; // Player IDs in starting lineup
+            bench: number[]; // Player IDs on bench
+        };
+    };
 }
 
 export interface HistoricalData {

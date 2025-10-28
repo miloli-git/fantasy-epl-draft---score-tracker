@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { Manager, HistoricalData } from '../types';
+import { Manager, HistoricalData, GameweekLineup } from '../types';
 
 interface LeagueContextType {
     managers: Manager[];
@@ -11,6 +11,10 @@ interface LeagueContextType {
     addHistoricalScores: (playerId: number, scores: { [gameweek: number]: number }) => void;
     auctionPrices: { [playerId: number]: number };
     setAuctionPrices: (prices: { [playerId: number]: number }) => void;
+    gameweekLineups: GameweekLineup;
+    setGameweekLineups: React.Dispatch<React.SetStateAction<GameweekLineup>>;
+    leagueId: string | null;
+    setLeagueId: (id: string) => void;
     isInitialized: boolean;
 }
 
@@ -30,16 +34,26 @@ export const LeagueProvider: React.FC<{children: React.ReactNode}> = ({ children
     const [managers, setManagers] = useState<Manager[]>([]);
     const [historicalScores, setHistoricalScores] = useState<HistoricalData>({});
     const [auctionPrices, setAuctionPrices] = useState<{ [playerId: number]: number }>({});
+    const [gameweekLineups, setGameweekLineups] = useState<GameweekLineup>({});
+    const [leagueId, setLeagueId] = useState<string | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
 
     useEffect(() => {
         try {
             const savedState = localStorage.getItem(LEAGUE_STATE_KEY);
             if (savedState) {
-                const { managers: savedManagers, historicalScores: savedScores, auctionPrices: savedPrices } = JSON.parse(savedState);
+                const {
+                    managers: savedManagers,
+                    historicalScores: savedScores,
+                    auctionPrices: savedPrices,
+                    gameweekLineups: savedLineups,
+                    leagueId: savedLeagueId
+                } = JSON.parse(savedState);
                 setManagers(savedManagers || []);
                 setHistoricalScores(savedScores || {});
                 setAuctionPrices(savedPrices || {});
+                setGameweekLineups(savedLineups || {});
+                setLeagueId(savedLeagueId || null);
             }
         } catch (error) {
             console.error("Failed to load league state from localStorage", error);
@@ -51,13 +65,19 @@ export const LeagueProvider: React.FC<{children: React.ReactNode}> = ({ children
     useEffect(() => {
         if (isInitialized) {
             try {
-                const stateToSave = JSON.stringify({ managers, historicalScores, auctionPrices });
+                const stateToSave = JSON.stringify({
+                    managers,
+                    historicalScores,
+                    auctionPrices,
+                    gameweekLineups,
+                    leagueId
+                });
                 localStorage.setItem(LEAGUE_STATE_KEY, stateToSave);
             } catch (error) {
                 console.error("Failed to save league state to localStorage", error);
             }
         }
-    }, [managers, historicalScores, auctionPrices, isInitialized]);
+    }, [managers, historicalScores, auctionPrices, gameweekLineups, leagueId, isInitialized]);
     
 
     const addManager = (name: string) => {
@@ -90,7 +110,22 @@ export const LeagueProvider: React.FC<{children: React.ReactNode}> = ({ children
     };
 
     return (
-        <LeagueContext.Provider value={{ managers, setManagers, addManager, updateManager, deleteManager, historicalScores, addHistoricalScores, auctionPrices, setAuctionPrices, isInitialized }}>
+        <LeagueContext.Provider value={{
+            managers,
+            setManagers,
+            addManager,
+            updateManager,
+            deleteManager,
+            historicalScores,
+            addHistoricalScores,
+            auctionPrices,
+            setAuctionPrices,
+            gameweekLineups,
+            setGameweekLineups,
+            leagueId,
+            setLeagueId,
+            isInitialized
+        }}>
             {children}
         </LeagueContext.Provider>
     );
