@@ -11,7 +11,7 @@ const PROXY_URL = 'https://corsproxy.io/?';
 const API_LEAGUE_DETAILS_URL = (id: string) => `${PROXY_URL}${encodeURIComponent(`https://draft.premierleague.com/api/league/${id}/details`)}`;
 const API_ELEMENT_STATUS_URL = (id: string) => `${PROXY_URL}${encodeURIComponent(`https://draft.premierleague.com/api/league/${id}/element-status`)}`;
 
-const STARTING_BUDGET = 100;
+const STARTING_BUDGET = 2000;
 
 const Setup: React.FC = () => {
     const { managers, addManager, updateManager, deleteManager, setManagers, setAuctionPrices } = useLeague();
