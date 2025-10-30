@@ -44,3 +44,4 @@ dist-ssr
 api/node_modules/
 api/.env
 api/dist/
+.vercel
