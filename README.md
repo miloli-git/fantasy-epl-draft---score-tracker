@@ -1,9 +1,8 @@
 # Fantasy EPL Draft & Score Tracker
 
-> **Historical archive.** This is the first thing I ever vibe coded. Leaving it
-> public for posterity, warts and all. I don't intend to touch it again — I'll
-> build a fresh version next season with everything I've learned in the year
-> since. Read it as a starting point, not a reference.
+> First thing I ever vibed, after hearing about Google AI Studio at a DAW talk.
+> Leaving it up for posterity. We'll look to build out a better version,
+> hopefully, for next season, with a year's worth of lessons and experience.
 
 A React app for managing a fantasy English Premier League draft league: set up
 manager rosters, track live scores from the official FPL data, execute trades
